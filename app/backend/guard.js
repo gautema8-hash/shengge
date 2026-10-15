@@ -92,11 +92,12 @@ function send(req, res, status, body, type) {
   const ae = (req.headers && req.headers['accept-encoding']) || '';
   if (/json|text|javascript|svg/.test(t) && buf.length > 1024 && /\bgzip\b/.test(ae)) {
     const gz = zlib.gzipSync(buf);
+    res.setHeader('Content-Type', t); // gzip 分支也必须带类型：浏览器默认请求 gzip，漏设会被当纯文本渲染
     res.setHeader('Content-Encoding', 'gzip');
     res.writeHead(status);
     res.end(gz);
   } else {
-    res.writeHead(status);
+    res.writeHead(status, { 'Content-Type': t });
     res.end(buf);
   }
 }
@@ -120,6 +121,7 @@ function serveStatic(req, res, urlPath, FRONTEND_DIR, MIME) {
   const ae = (req.headers['accept-encoding']) || '';
   if (buf.length > 1024 && /\bgzip\b/.test(ae) && /json|text|javascript|svg/.test(t)) {
     const gz = zlib.gzipSync(buf);
+    res.setHeader('Content-Type', t); // gzip 分支也必须带类型
     res.setHeader('Content-Encoding', 'gzip');
     res.writeHead(200);
     res.end(gz);
