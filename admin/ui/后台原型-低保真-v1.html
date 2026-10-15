@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>「生格」管理后台 · 低保真原型 v1</title>
+<style>
+  :root{
+    --p500:#5B8A83;--p600:#477069;--p700:#365751;--p50:#F3F7F6;
+    --bg:#F5F5F4;--surface:#FFFFFF;--divide:#E4E2DC;--g100:#F2F1ED;
+    --g300:#CFCDC5;--g400:#A8A6A0;--g500:#7C7A74;--g600:#5C5A55;--g800:#2E2C29;--g900:#1C1B19;
+    --ok:#6F9E7C;--ok-bg:#EAF2EC;--ok-tx:#3F6B4B;
+    --warn:#B98A45;--warn-bg:#F8F1E4;--warn-tx:#7A5A2B;
+    --err:#C2706B;--err-bg:#FBEDEC;--err-tx:#8F4A46;
+    --info:#6E88A6;--info-bg:#EDF1F5;--info-tx:#465D75;
+    --viz1:#5B8A83;--viz2:#A87A44;--viz3:#6E88A6;--viz4:#C2706B;--viz5:#7C7A74;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang SC","MiSans","HarmonyOS Sans",sans-serif;}
+  body{background:var(--bg);color:var(--g800);display:flex;min-height:100vh;}
+  /* 侧栏 */
+  .side{width:216px;background:var(--surface);border-right:1px solid var(--divide);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;}
+  .logo{display:flex;align-items:center;gap:10px;padding:20px 20px 16px;border-bottom:1px solid var(--divide);}
+  .logo .mk{width:34px;height:34px;border-radius:9px;background:var(--p50);border:1px solid var(--divide);display:grid;grid-template-columns:repeat(4,5px);gap:2px;padding:7px;}
+  .logo .mk i{background:var(--p300);border-radius:1px;}
+  .logo .mk i.f{background:var(--p600);}
+  .logo .nm{font-size:15px;font-weight:600;color:var(--g900);}
+  .logo .nm small{display:block;font-size:10px;color:var(--g400);font-weight:400;margin-top:1px;}
+  .nav{padding:12px 10px;flex:1;overflow-y:auto;}
+  .ngroup{font-size:11px;color:var(--g400);padding:12px 10px 6px;}
+  .nitem{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:14px;color:var(--g600);cursor:pointer;margin-bottom:2px;transition:background .15s;}
+  .nitem:hover{background:var(--g100);}
+  .nitem.on{background:var(--p50);color:var(--p600);font-weight:500;}
+  .nitem .ico{width:16px;height:16px;border-radius:4px;border:1.5px solid currentColor;opacity:.7;flex-shrink:0;}
+  .side-foot{padding:14px 20px;border-top:1px solid var(--divide);font-size:11px;color:var(--g400);line-height:1.7;}
+  /* 主区 */
+  .main{flex:1;margin-left:216px;padding:24px 28px 40px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .topbar h2{font-size:20px;font-weight:600;color:var(--g900);}
+  .topbar .who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--g600);}
+  .topbar .who .av{width:30px;height:30px;border-radius:50%;background:var(--p50);border:1px solid var(--divide);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--p600);}
+  .page{display:none;}
+  .page.on{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .grid{display:grid;gap:16px;}
+  .kpi4{grid-template-columns:repeat(4,1fr);}
+  .kpi{background:var(--surface);border:1px solid var(--divide);border-radius:12px;padding:18px 20px;}
+  .kpi .v{font-size:26px;font-weight:600;color:var(--g900);font-variant-numeric:tabular-nums;}
+  .kpi .l{font-size:13px;color:var(--g500);margin-top:4px;}
+  .kpi .d{font-size:11px;margin-top:6px;}
+  .up{color:var(--ok-tx);} .dn{color:var(--err-tx);} .flat{color:var(--g400);}
+  .card2{background:var(--surface);border:1px solid var(--divide);border-radius:12px;padding:20px;}
+  .card2 h3{font-size:15px;font-weight:500;color:var(--g900);margin-bottom:4px;}
+  .card2 .desc{font-size:12px;color:var(--g500);margin-bottom:16px;line-height:1.6;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-weight:500;color:var(--g500);padding:8px 10px;border-bottom:1px solid var(--divide);font-size:12px;}
+  td{padding:10px;border-bottom:1px solid var(--g100);color:var(--g800);}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;font-size:11px;}
+  .b-ok{background:var(--ok-bg);color:var(--ok-tx);}
+  .b-warn{background:var(--warn-bg);color:var(--warn-tx);}
+  .b-err{background:var(--err-bg);color:var(--err-tx);}
+  .b-info{background:var(--info-bg);color:var(--info-tx);}
+  .b-g{background:var(--g100);color:var(--g500);}
+  .bar{height:8px;border-radius:4px;background:var(--g100);overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:4px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;}
+  .btn:active{transform:scale(.98);}
+  .btn-p{background:var(--p600);color:#fff;}
+  .btn-s{background:var(--p50);color:var(--p600);border:1px solid var(--divide);}
+  .btn-ghost{background:transparent;color:var(--g500);border:1px solid var(--g300);}
+  .btn-err{background:transparent;color:var(--err-tx);border:1px solid var(--err);}
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .search{flex:1;max-width:320px;height:34px;border-radius:8px;border:1px solid var(--divide);background:var(--surface);padding:0 12px;font-size:13px;color:var(--g800);display:flex;align-items:center;color:var(--g400);}
+  .pill-note{background:var(--p50);border:1px solid var(--divide);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--p700);line-height:1.7;margin-bottom:16px;}
+  .chart{display:flex;align-items:flex-end;gap:10px;height:140px;padding-top:10px;}
+  .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;}
+  .chart .col i{width:100%;max-width:36px;border-radius:4px 4px 0 0;}
+  .chart .col span{font-size:10px;color:var(--g500);}
+  .two{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+  .switch{width:40px;height:22px;border-radius:999px;background:var(--g300);position:relative;cursor:pointer;flex-shrink:0;}
+  .switch.on{background:var(--p600);}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:all .2s;}
+  .switch.on::after{left:20px;}
+  @media (max-width:1100px){.kpi4{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo">
+    <div class="mk"><i class="f"></i><i class="f"></i><i></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div>
+    <div class="nm">生格 · 运营后台<small>管理系统的克制版本</small></div>
+  </div>
+  <nav class="nav">
+    <div class="ngroup">概览</div>
+    <div class="nitem on" data-p="p-dashboard"><span class="ico"></span>数据看板</div>
+    <div class="ngroup">内容运营</div>
+    <div class="nitem" data-p="p-question"><span class="ico"></span>轻提问题库</div>
+    <div class="nitem" data-p="p-hotline"><span class="ico"></span>热线配置核验</div>
+    <div class="nitem" data-p="p-words"><span class="ico"></span>敏感词库</div>
+    <div class="ngroup">安全合规</div>
+    <div class="nitem" data-p="p-risk"><span class="ico"></span>风控事件（脱敏）</div>
+    <div class="nitem" data-p="p-audit"><span class="ico"></span>操作审计日志</div>
+    <div class="ngroup">用户</div>
+    <div class="nitem" data-p="p-user"><span class="ico"></span>用户管理（匿名）</div>
+  </nav>
+  <div class="side-foot">
+    设计约束：本后台永远看不到用户日记内容。<br>数据看板全部为匿名聚合统计。
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h2 id="ptitle">数据看板</h2>
+    <div class="who"><span>内测环境</span><div class="av">运</div><span>运营员 A</span></div>
+  </div>
+
+  <!-- 看板 -->
+  <section class="page on" id="p-dashboard">
+    <div class="pill-note">隐私边界：本页全部指标为<strong>匿名聚合</strong>统计，无法回溯到任何个人。用户日记为端到端加密 / 仅存本机，后台无明文存储，也无查看入口。</div>
+    <div class="grid kpi4">
+      <div class="kpi"><div class="v">1,284</div><div class="l">累计用户（内测）</div><div class="d up">周新增 +212</div></div>
+      <div class="kpi"><div class="v">37.2%</div><div class="l">北极星 · 30天记录≥10天占比</div><div class="d up">较上周 +2.1pt</div></div>
+      <div class="kpi"><div class="v">0.18%</div><div class="l">崩溃率</div><div class="d flat">门禁 &lt;0.5%</div></div>
+      <div class="kpi"><div class="v">6</div><div class="l">今日风控高危事件（脱敏）</div><div class="d dn">均已弹窗转介</div></div>
+    </div>
+    <div class="two" style="margin-top:16px">
+      <div class="card2">
+        <h3>近 7 日 · 记录创建数</h3>
+        <div class="desc">按天聚合，不含任何内容</div>
+        <div class="chart">
+          <div class="col"><i style="height:52%;background:var(--viz1)"></i><span>周一</span></div>
+          <div class="col"><i style="height:61%;background:var(--viz1)"></i><span>周二</span></div>
+          <div class="col"><i style="height:48%;background:var(--viz1)"></i><span>周三</span></div>
+          <div class="col"><i style="height:74%;background:var(--viz1)"></i><span>周四</span></div>
+          <div class="col"><i style="height:88%;background:var(--viz2)"></i><span>周五</span></div>
+          <div class="col"><i style="height:100%;background:var(--viz1)"></i><span>周六</span></div>
+          <div class="col"><i style="height:70%;background:var(--viz1)"></i><span>今日</span></div>
+        </div>
+      </div>
+      <div class="card2">
+        <h3>情绪标注分布</h3>
+        <div class="desc">仅在用户主动标注时计入</div>
+        <table>
+          <tr><td>滋养</td><td style="width:45%"><div class="bar"><i style="width:61%;background:var(--viz1)"></i></div></td><td>61%</td></tr>
+          <tr><td>耗竭</td><td><div class="bar"><i style="width:24%;background:var(--viz4)"></i></div></td><td>24%</td></tr>
+          <tr><td>未标注</td><td><div class="bar"><i style="width:15%;background:var(--viz5)"></i></div></td><td>15%</td></tr>
+        </table>
+        <div style="font-size:11px;color:var(--g400);margin-top:12px;line-height:1.6">本页只回答"哪类时刻更多"，不回答"某个人怎么样"。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 题库 -->
+  <section class="page" id="p-question">
+    <div class="toolbar">
+      <div class="search">搜索提问…</div>
+      <button class="btn btn-p">+ 新增提问</button>
+    </div>
+    <div class="card2">
+      <h3>每日轻提问（当前 30 条，上架 28 条）</h3>
+      <div class="desc">同一提问 7 天内不重复下发给同一用户；修改需二次确认并记入审计日志。</div>
+      <table>
+        <tr><th>提问</th><th>分类</th><th>状态</th><th>近30天命中</th><th>操作</th></tr>
+        <tr><td>今天哪一刻，你觉得活着还不错？</td><td>感知当下</td><td><span class="badge b-ok">上架</span></td><td>3,412</td><td><button class="btn btn-ghost">编辑</button></td></tr>
+        <tr><td>最近什么事在消耗你？</td><td>消耗与滋养</td><td><span class="badge b-ok">上架</span></td><td>2,988</td><td><button class="btn btn-ghost">编辑</button></td></tr>
+        <tr><td>如果把今天的疲惫画成天气，是什么天气？</td><td>消耗与滋养</td><td><span class="badge b-ok">上架</span></td><td>1,204</td><td><button class="btn btn-ghost">编辑</button></td></tr>
+        <tr><td>你上一次大笑是什么时候，因为什么？</td><td>回忆与意义</td><td><span class="badge b-warn">待复审</span></td><td>986</td><td><button class="btn btn-s">复审</button></td></tr>
+        <tr><td>（示例）你为什么还不努力？</td><td>—</td><td><span class="badge b-err">已下架·违反文案宪法</span></td><td>—</td><td><button class="btn btn-ghost">查看原因</button></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 热线 -->
+  <section class="page" id="p-hotline">
+    <div class="pill-note">每季度人工核验一次号码有效性（写入运维日历）。热线数据下发给 App 危机弹窗，<strong>不可下线全部热线</strong>——至少保留 1 条有效配置。</div>
+    <div class="card2">
+      <h3>危机援助热线配置</h3>
+      <div class="desc">App 危机弹窗数据源 · 上次核验 2026-10-01 · 下次核验 2027-01-01</div>
+      <table>
+        <tr><th>地区</th><th>名称</th><th>号码</th><th>时段</th><th>状态</th><th>操作</th></tr>
+        <tr><td>全国</td><td>心理援助热线</td><td><b>12356</b></td><td>24 小时</td><td><span class="badge b-ok">有效</span></td><td><button class="btn btn-ghost">核验记录</button></td></tr>
+        <tr><td>北京</td><td>心理危机干预中心</td><td>010-82951332</td><td>24 小时</td><td><span class="badge b-ok">有效</span></td><td><button class="btn btn-ghost">核验记录</button></td></tr>
+        <tr><td>示例</td><td>（示例热线）</td><td>000-0000</td><td>—</td><td><span class="badge b-err">失效·待替换</span></td><td><button class="btn btn-s">替换</button></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 词库 -->
+  <section class="page" id="p-words">
+    <div class="toolbar">
+      <div class="search">搜索词条…</div>
+      <button class="btn btn-p">+ 新增词条</button>
+      <button class="btn btn-s">同步到端侧词库</button>
+    </div>
+    <div class="card2">
+      <h3>端侧敏感词库（分级）</h3>
+      <div class="desc">词库打包下发到 App 本地，命中在端上完成，不上传原文。修改需双人复核并记入审计日志。</div>
+      <table>
+        <tr><th>词条（脱敏展示）</th><th>级别</th><th>响应</th><th>状态</th><th>操作</th></tr>
+        <tr><td>w***1</td><td><span class="badge b-err">高危 L2</span></td><td>立即危机弹窗</td><td><span class="badge b-ok">生效</span></td><td><button class="btn btn-ghost">编辑</button></td></tr>
+        <tr><td>w***7</td><td><span class="badge b-err">高危 L2</span></td><td>立即危机弹窗</td><td><span class="badge b-ok">生效</span></td><td><button class="btn btn-ghost">编辑</button></td></tr>
+        <tr><td>p***3</td><td><span class="badge b-warn">疑似 L1</span></td><td>静默观察计数</td><td><span class="badge b-warn">复核中</span></td><td><button class="btn btn-s">复核</button></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 风控 -->
+  <section class="page" id="p-risk">
+    <div class="pill-note">风控日志仅记录：<strong>时间、级别、命中词类别、处理动作</strong>。不记录、不展示用户原文，不可回溯身份。这是产品宪法第 5 条的技术体现。</div>
+    <div class="card2">
+      <h3>风控事件（脱敏视图）</h3>
+      <div class="desc">高危事件均已由 App 端弹窗转介 12356，此处仅作运营侧计数与词库优化参考。</div>
+      <table>
+        <tr><th>时间</th><th>级别</th><th>命中类别</th><th>处理动作</th><th>状态</th></tr>
+        <tr><td>10-16 00:12</td><td><span class="badge b-err">L2 高危</span></td><td>自伤类</td><td>危机弹窗 + 热线转介</td><td><span class="badge b-ok">已处理（端侧自动）</span></td></tr>
+        <tr><td>10-15 23:41</td><td><span class="badge b-err">L2 高危</span></td><td>自伤类</td><td>危机弹窗 + 热线转介</td><td><span class="badge b-ok">已处理（端侧自动）</span></td></tr>
+        <tr><td>10-15 22:07</td><td><span class="badge b-warn">L1 疑似</span></td><td>绝望情绪类</td><td>静默观察计数</td><td><span class="badge b-g">观察中</span></td></tr>
+        <tr><td>10-15 21:55</td><td><span class="badge b-warn">L1 疑似</span></td><td>绝望情绪类</td><td>静默观察计数</td><td><span class="badge b-g">观察中</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 审计 -->
+  <section class="page" id="p-audit">
+    <div class="card2">
+      <h3>操作审计日志（不可删改）</h3>
+      <div class="desc">后台所有敏感操作自动留痕 ≥6 个月，双人复核类操作记录两位操作人。</div>
+      <table>
+        <tr><th>时间</th><th>操作人</th><th>动作</th><th>对象</th><th>结果</th></tr>
+        <tr><td>10-15 18:20</td><td>运营员 A</td><td>题库下架（违反文案宪法）</td><td>提问 #E-0902</td><td><span class="badge b-ok">成功 · 复核人 B</span></td></tr>
+        <tr><td>10-15 18:19</td><td>运营员 B</td><td>复核通过（下架）</td><td>提问 #E-0902</td><td><span class="badge b-ok">成功</span></td></tr>
+        <tr><td>10-14 09:03</td><td>系统</td><td>季度热线核验提醒</td><td>hotline_config</td><td><span class="badge b-info">已推送</span></td></tr>
+        <tr><td>10-12 14:47</td><td>运营员 A</td><td>敏感词新增（L1）</td><td>p***3</td><td><span class="badge b-ok">成功 · 复核人 C</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 用户 -->
+  <section class="page" id="p-user">
+    <div class="pill-note">用户列表为<strong>匿名 ID + 状态</strong>。后台不存在"查看某用户日记"的功能——不是权限没开，是数据架构上不存在明文。注销请求触发后 15 天物理删除。</div>
+    <div class="toolbar">
+      <div class="search">匿名 ID / 状态…</div>
+    </div>
+    <div class="card2">
+      <h3>用户（匿名视图）</h3>
+      <table>
+        <tr><th>匿名 ID</th><th>注册时间</th><th>云同步</th><th>风控状态</th><th>账号状态</th><th>操作</th></tr>
+        <tr><td>a***4821</td><td>10-01</td><td><span class="badge b-g">未开启</span></td><td><span class="badge b-g">正常</span></td><td><span class="badge b-ok">正常</span></td><td><button class="btn btn-ghost">仅状态详情</button></td></tr>
+        <tr><td>a***7702</td><td>10-03</td><td><span class="badge b-info">已开启</span></td><td><span class="badge b-g">正常</span></td><td><span class="badge b-ok">正常</span></td><td><button class="btn btn-ghost">仅状态详情</button></td></tr>
+        <tr><td>a***0093</td><td>09-28</td><td><span class="badge b-g">未开启</span></td><td><span class="badge b-err">L2 曾命中</span></td><td><span class="badge b-ok">正常</span></td><td><button class="btn btn-ghost">仅状态详情</button></td></tr>
+        <tr><td>a***1145</td><td>09-15</td><td>—</td><td>—</td><td><span class="badge b-warn">注销中 · 余 9 天</span></td><td><button class="btn btn-ghost">删除计划</button></td></tr>
+      </table>
+      <div style="font-size:11px;color:var(--g400);margin-top:12px">没有"重置密码""查看记录""强制登出"等侵入性操作——用户主权优先。</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const titles={ 'p-dashboard':'数据看板','p-question':'轻提问题库','p-hotline':'热线配置核验','p-words':'敏感词库','p-risk':'风控事件（脱敏）','p-audit':'操作审计日志','p-user':'用户管理（匿名）' };
+document.querySelectorAll('.nitem').forEach(n=>{
+  n.addEventListener('click',()=>{
+    document.querySelectorAll('.nitem').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+    n.classList.add('on');
+    const id=n.dataset.p;
+    document.getElementById(id).classList.add('on');
+    document.getElementById('ptitle').textContent=titles[id];
+  });
+});
+</script>
+</body>
+</html>

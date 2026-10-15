@@ -1,0 +1,35 @@
+# WorkBuddy 本地工作区数据（不进仓库）
+.workbuddy/
+
+# 依赖与构建产物
+node_modules/
+build/
+dist/
+.dart_tool/
+.flutter-plugins*
+*.lock
+!packages/**/pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 环境与密钥（合规要求：任何密钥不入库）
+.env
+*.pem
+*.keystore
+key.properties
+
+# Flutter/iOS/Android 构建中间物
+*.g.dart.bak
+ ios/Pods/
+**/Pods/
+android/.gradle/
+*.apk
+*.aab
+*.ipa
