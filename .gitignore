@@ -33,3 +33,9 @@ android/.gradle/
 *.apk
 *.aab
 *.ipa
+
+# 运行时数据与凭证（合规要求：数据库凭证/主密钥/本地数据绝不入库）
+server-data/
+tests/.tmp*
+tests/.dbg/
+*.log

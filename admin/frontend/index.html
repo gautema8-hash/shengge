@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>「生格」管理后台 · 运营系统</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo">
+    <div class="mk"><i class="f"></i><i class="f"></i><i></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div>
+    <div class="nm">生格 · 运营后台<small>管理系统的克制版本</small></div>
+  </div>
+  <nav class="nav">
+    <div class="ngroup">概览</div>
+    <div class="nitem on" data-p="p-dashboard"><span class="ico"></span>数据看板</div>
+    <div class="ngroup">内容运营</div>
+    <div class="nitem" data-p="p-question"><span class="ico"></span>轻提问题库</div>
+    <div class="nitem" data-p="p-hotline"><span class="ico"></span>热线配置核验</div>
+    <div class="nitem" data-p="p-words"><span class="ico"></span>敏感词库</div>
+    <div class="ngroup">安全合规</div>
+    <div class="nitem" data-p="p-risk"><span class="ico"></span>风控事件（脱敏）</div>
+    <div class="nitem" data-p="p-audit"><span class="ico"></span>操作审计日志</div>
+    <div class="ngroup">用户</div>
+    <div class="nitem" data-p="p-user"><span class="ico"></span>用户管理（匿名）</div>
+  </nav>
+  <div class="side-foot">
+    设计约束：本后台永远看不到用户日记内容。<br>数据看板全部为匿名聚合统计。
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h2 id="ptitle">数据看板</h2>
+    <div class="who"><span id="env-tag">内测环境</span><div class="av">运</div><span id="who-name">运营员 A</span><span class="btn btn-ghost" style="height:28px;padding:0 12px;font-size:12px" onclick="doLogout()">退出</span></div>
+  </div>
+
+  <!-- 看板 -->
+  <section class="page on" id="p-dashboard">
+    <div class="pill-note">隐私边界：本页全部指标为<strong>匿名聚合</strong>统计，无法回溯到任何个人。用户日记为端到端加密 / 仅存本机，后台无明文存储，也无查看入口。</div>
+    <div class="grid kpi4" id="kpi4"></div>
+    <div class="two" style="margin-top:16px">
+      <div class="card2">
+        <h3>近 7 日 · 记录创建数</h3>
+        <div class="desc">按天聚合，不含任何内容</div>
+        <div class="chart" id="week-chart"></div>
+      </div>
+      <div class="card2">
+        <h3>情绪标注分布</h3>
+        <div class="desc">仅在用户主动标注时计入</div>
+        <table id="mood-table"></table>
+        <div style="font-size:11px;color:var(--g400);margin-top:12px;line-height:1.6">本页只回答"哪类时刻更多"，不回答"某个人怎么样"。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 题库 -->
+  <section class="page" id="p-question">
+    <div class="toolbar">
+      <div class="search"><input id="q-search" placeholder="搜索提问…" oninput="renderQuestions()"></div>
+      <button class="btn btn-p" onclick="openQuestionModal()">+ 新增提问</button>
+    </div>
+    <div class="card2">
+      <h3 id="q-count">每日轻提问</h3>
+      <div class="desc">同一提问 7 天内不重复下发给同一用户；修改需二次确认并记入审计日志。</div>
+      <table id="q-table"></table>
+    </div>
+  </section>
+
+  <!-- 热线 -->
+  <section class="page" id="p-hotline">
+    <div class="pill-note">每季度人工核验一次号码有效性（写入运维日历）。热线数据下发给 App 危机弹窗，<strong>不可下线全部热线</strong>——至少保留 1 条有效配置。</div>
+    <div class="card2">
+      <h3>危机援助热线配置</h3>
+      <div class="desc" id="hotline-desc">App 危机弹窗数据源</div>
+      <table id="hotline-table"></table>
+    </div>
+  </section>
+
+  <!-- 词库 -->
+  <section class="page" id="p-words">
+    <div class="toolbar">
+      <div class="search"><input id="w-search" placeholder="搜索词条…" oninput="renderWords()"></div>
+      <button class="btn btn-p" onclick="openWordModal()">+ 新增词条</button>
+      <button class="btn btn-s" onclick="syncWords()">同步到端侧词库</button>
+    </div>
+    <div class="card2">
+      <h3>端侧敏感词库（分级）</h3>
+      <div class="desc">词库打包下发到 App 本地，命中在端上完成，不上传原文。修改需双人复核并记入审计日志。</div>
+      <table id="w-table"></table>
+    </div>
+  </section>
+
+  <!-- 风控 -->
+  <section class="page" id="p-risk">
+    <div class="pill-note">风控日志仅记录：<strong>时间、级别、命中词类别、处理动作</strong>。不记录、不展示用户原文，不可回溯身份。这是产品宪法第 5 条的技术体现。</div>
+    <div class="card2">
+      <h3>风控事件（脱敏视图）</h3>
+      <div class="desc">高危事件均已由 App 端弹窗转介 12356，此处仅作运营侧计数与词库优化参考。</div>
+      <table id="risk-table"></table>
+    </div>
+  </section>
+
+  <!-- 审计 -->
+  <section class="page" id="p-audit">
+    <div class="card2">
+      <h3>操作审计日志（不可删改）</h3>
+      <div class="desc">后台所有敏感操作自动留痕 ≥6 个月，双人复核类操作记录两位操作人。</div>
+      <table id="audit-table"></table>
+    </div>
+  </section>
+
+  <!-- 用户 -->
+  <section class="page" id="p-user">
+    <div class="pill-note">用户列表为<strong>匿名 ID + 状态</strong>。后台不存在"查看某用户日记"的功能——不是权限没开，是数据架构上不存在明文。注销请求触发后 15 天物理删除。</div>
+    <div class="toolbar">
+      <div class="search"><input id="u-search" placeholder="匿名 ID / 状态…" oninput="renderUsers()"></div>
+    </div>
+    <div class="card2">
+      <h3>用户（匿名视图）</h3>
+      <table id="user-table"></table>
+      <div style="font-size:11px;color:var(--g400);margin-top:12px">没有"重置密码""查看记录""强制登出"等侵入性操作——用户主权优先。</div>
+    </div>
+  </section>
+</main>
+
+<!-- 登录门 -->
+<div class="dim" id="login-dim">
+  <div class="mbox">
+    <h4>生格 · 运营后台登录</h4>
+    <label>用户名</label><input id="lg-user" autocomplete="username" placeholder="用户名">
+    <label>密码</label><input id="lg-pass" type="password" autocomplete="current-password" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="lg-err" style="font-size:12px;color:var(--err-tx);margin-top:10px;min-height:16px"></div>
+    <div class="acts">
+      <button class="btn btn-p" style="width:100%" onclick="doLogin()">登 录</button>
+    </div>
+    <div style="font-size:11px;color:var(--g400);margin-top:12px;line-height:1.6">连续失败 10 次将锁定 5 分钟。所有登录行为记入审计日志。</div>
+  </div>
+</div>
+<!-- 通用弹窗 -->
+<div class="dim" id="modal">
+  <div class="mbox">
+    <h4 id="modal-title">编辑</h4>
+    <div id="modal-body"></div>
+    <div class="acts">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-p" id="modal-ok">保存</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

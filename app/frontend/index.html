@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>生格 · 生命方格</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="page-title">「生格」App · 高保真实现 v0.1.0（与低保真原型 1:1）</div>
+<div class="page-sub">宽屏显示手机画布 · 手机访问自动全屏 ｜ 数据本地优先，后端在线时自动同步配置</div>
+
+<div class="phone" id="phone">
+  <div class="status"><span>9:41</span><span>··· 5G ▮</span></div>
+
+  <div class="body-area">
+
+    <!-- 屏1 首启欢迎页 -->
+    <section class="screen" id="scr-welcome">
+      <div class="welcome">
+        <div class="logo"><div class="grid-mini" id="welcome-logo"></div></div>
+        <h2>很多人终其一生，<br>都没有找到所谓的人生意义。<br><br>暂时迷茫，不是你的失败。</h2>
+        <p>这里不给你答案，只陪你把每一天过成可以回看的样子。同一份生命格子，可以看成倒计时，也可以看成收集。</p>
+        <div class="btn btn-p" style="margin-bottom:12px" onclick="finishWelcome()">开始</div>
+        <div class="btn btn-g" onclick="finishWelcome(true)">先随便看看</div>
+        <div style="font-size:11px;color:var(--g500);line-height:1.6;margin-top:20px">使用即表示同意《用户协议》与《隐私政策》。<br>本工具仅用于自我记录，不能替代专业心理帮助。</div>
+      </div>
+    </section>
+
+    <!-- 屏2 生命方格（Tab 主页） -->
+    <section class="screen" id="scr-grid">
+      <div class="appbar"><span class="t">生命方格</span></div>
+      <div class="scroll">
+        <div class="mode-seg">
+          <div id="mode-1" class="on" onclick="setMode(1)">倒计时 · 过一天少一天</div>
+          <div id="mode-2" onclick="setMode(2)">收集 · 过一天多一天</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="n" id="st1">0</div><div class="l" id="st1l">已用掉的格子</div></div>
+          <div class="stat"><div class="n" id="st2">0</div><div class="l" id="st2l">剩下的日子</div></div>
+        </div>
+        <div style="height:8px;border-radius:4px;background:var(--g100);overflow:hidden;margin-bottom:14px">
+          <div id="life-bar" style="width:0%;height:100%;background:var(--p600);border-radius:4px"></div>
+        </div>
+        <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+        <div class="legend">
+          <span><i style="background:#D9D7D1"></i>已度过</span>
+          <span><i style="background:var(--p600)"></i>今天</span>
+          <span><i style="background:#EFEFEA"></i>未来</span>
+          <span><i style="background:var(--nourish)"></i>滋养</span>
+          <span><i style="background:var(--drain)"></i>耗竭</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 屏3 记录 Tab -->
+    <section class="screen" id="scr-diary">
+      <div class="appbar"><span class="t">记录</span></div>
+      <div class="scroll">
+        <div class="card q-card">
+          <div class="hint">今天的问题 · 可换成自己想写的</div>
+          <div class="q" id="today-question">…</div>
+        </div>
+        <div class="ta"><textarea id="diary-input" placeholder="想到什么写什么，不写也没关系"></textarea><span class="cnt" id="diary-cnt">0</span></div>
+        <div class="moods" id="diary-moods">
+          <div class="mood n" data-mood="n" onclick="selMood(this)"><span class="dot" style="border-color:var(--nourish)"></span>滋养</div>
+          <div class="mood d" data-mood="d" onclick="selMood(this)"><span class="dot" style="border-color:var(--drain)"></span>耗竭</div>
+          <div class="mood m" data-mood="" onclick="selMood(this)"><span class="dot" style="border-color:var(--g400);border-style:dashed"></span>不标了</div>
+        </div>
+        <div class="btn btn-p" onclick="saveDiary()">保存</div>
+        <div style="margin-top:24px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--g500)">过去的记录</span>
+          <span style="font-size:13px;color:var(--p600);cursor:pointer" onclick="toast('全部记录整理中，先看看最近几条')">全部 ›</span>
+        </div>
+        <div id="diary-list"></div>
+      </div>
+    </section>
+
+    <!-- 屏4 愿望 Tab -->
+    <section class="screen" id="scr-wish">
+      <div class="appbar"><span class="t">愿望</span></div>
+      <div class="scroll">
+        <div style="font-size:13px;color:var(--g500);margin-bottom:8px">这辈子想体验的小事 · 不用宏大</div>
+        <div class="card" id="wish-list"></div>
+        <div class="add" onclick="openAddWish()"><span class="plus">+</span>想体验一件小事</div>
+        <div style="margin-top:20px;font-size:13px;color:var(--g400);line-height:1.7">悄悄放弃的愿望不会消失，只会安静地待在这里。<br>你可以在"我的"里找到它们。</div>
+      </div>
+    </section>
+
+    <!-- 屏6 我的 Tab -->
+    <section class="screen" id="scr-me">
+      <div class="appbar"><span class="t">我的</span></div>
+      <div class="scroll">
+        <div class="card" style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+          <div style="width:52px;height:52px;border-radius:16px;background:var(--p50);border:1px solid var(--divide);display:flex;align-items:center;justify-content:center">
+            <div class="grid-mini" style="grid-template-columns:repeat(4,5px)" id="me-logo"></div>
+          </div>
+          <div>
+            <div style="font-size:17px;font-weight:500;color:var(--g900)" id="me-name">路过的旅人-4821</div>
+            <div style="font-size:13px;color:var(--g500);margin-top:3px" id="me-sub">来到生格的第 1 天 · 记录了 0 天</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--g500);margin:0 4px 8px">偏好</div>
+        <div class="card" style="padding:0 16px">
+          <div class="cellrow" onclick="openDefaultView()"><div class="cl"><span class="ct">默认打开的视角</span></div><span class="cv" id="cv-viewmode">倒计时 ›</span></div>
+          <div class="cellrow" onclick="go('scr-birthday')"><div class="cl"><span class="ct">生日与预期寿命</span></div><span class="cv" id="cv-birthday">已设置 ›</span></div>
+          <div class="cellrow" style="border-bottom:none" onclick="toast('外观跟随系统（内测版暂无手动开关）')"><div class="cl"><span class="ct">外观</span></div><span class="cv">跟随系统 ›</span></div>
+        </div>
+        <div style="font-size:13px;color:var(--g500);margin:20px 4px 8px">数据与备份</div>
+        <div class="card" style="padding:0 16px">
+          <div class="cellrow" onclick="go('scr-sync')"><div class="cl"><span class="ct">云同步</span><span class="cs">你的记录只存在这台手机里，很安全</span></div><span class="cv" id="cv-sync">未开启 ›</span></div>
+          <div class="cellrow" onclick="go('scr-export')"><div class="cl"><span class="ct">导出记录</span><span class="cs">JSON 备份 / PDF 手账</span></div><span class="cv">›</span></div>
+          <div class="cellrow" style="border-bottom:none" onclick="go('scr-snapshot')"><div class="cl"><span class="ct">意义快照</span><span class="cs">阶段性自我总结（攒够 30 条解锁）</span></div><span class="cv" id="cv-snapshot" style="color:var(--g400)">0/30</span></div>
+        </div>
+        <div style="font-size:13px;color:var(--g500);margin:20px 4px 8px">关于</div>
+        <div class="card" style="padding:0 16px">
+          <div class="cellrow" onclick="go('scr-constitution')"><div class="cl"><span class="ct">产品宪法</span><span class="cs">我们的六条"永不"</span></div><span class="cv">›</span></div>
+          <div class="cellrow" onclick="toast('本工具仅用于自我记录，不能替代专业心理帮助。全国心理援助热线 12356（24 小时）。')"><div class="cl"><span class="ct">免责声明与援助热线</span></div><span class="cv">›</span></div>
+          <div class="cellrow" onclick="toast('隐私政策：日记仅存于本机；服务端无明文存储。')"><div class="cl"><span class="ct">隐私政策</span></div><span class="cv">›</span></div>
+          <div class="cellrow" style="border-bottom:none" onclick="toast('用户协议（内测占位）')"><div class="cl"><span class="ct">用户协议</span></div><span class="cv">›</span></div>
+        </div>
+        <div class="card" style="padding:0 16px;margin-top:12px">
+          <div class="cellrow" style="border-bottom:none" onclick="confirmDeleteAll()"><div class="cl"><span class="ct" style="color:var(--drain-tx)">注销并删除全部数据</span></div><span class="cv" style="color:var(--g400)">›</span></div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--g400);line-height:1.8;margin-top:24px">
+          生格 v0.1.0（内测）<br>不催促，不评判，只陪着你。
+        </div>
+      </div>
+    </section>
+
+    <!-- 屏7 方格详情 + 补记入口 -->
+    <section class="screen" id="scr-cell">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t" id="cell-title">3 月 12 日</span></div>
+      <div class="scroll">
+        <div style="font-size:13px;color:var(--g500);margin-bottom:12px" id="cell-meta">2026 年 · 第 11 周</div>
+        <div class="card" style="margin-bottom:12px" id="cell-record-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span class="tag" id="cell-mood-tag"></span>
+            <span style="font-size:13px;color:var(--p600);cursor:pointer" onclick="openSupplement()">补记</span>
+          </div>
+          <div style="font-size:15px;color:var(--g800);line-height:1.7" id="cell-content"></div>
+          <div style="font-size:11px;color:var(--g400);margin-top:10px" id="cell-src">来自当天的日记</div>
+        </div>
+        <div class="card" style="margin-bottom:12px;display:none" id="cell-wish-card">
+          <div style="font-size:13px;color:var(--g500);margin-bottom:6px">完成的小事</div>
+          <div style="font-size:15px;color:var(--g800)" id="cell-wish"></div>
+        </div>
+        <div style="font-size:13px;color:var(--p600);text-align:center;margin-top:20px;cursor:pointer" onclick="openSupplement()">＋ 补记这一天</div>
+        <div style="font-size:13px;color:var(--g400);text-align:center;margin-top:12px">这一天就这样。不需要更多了。</div>
+      </div>
+    </section>
+
+    <!-- 屏8 日记详情 -->
+    <section class="screen" id="scr-diary-detail">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t" id="dd-title">3 月 10 日</span><span class="rt" onclick="toast('编辑功能即将开放')">编辑</span></div>
+      <div class="scroll">
+        <div style="margin-bottom:12px"><span class="tag" id="dd-tag"></span></div>
+        <div style="font-size:15px;color:var(--g800);line-height:1.8" id="dd-content"></div>
+        <div style="font-size:11px;color:var(--g400);margin-top:16px" id="dd-time">写于 23:58 · 仅存于这台手机</div>
+        <div class="btn btn-err" style="margin-top:28px" onclick="openOverlay('modal-delete')">删除这条记录</div>
+      </div>
+    </section>
+
+    <!-- 屏12 生日与预期寿命 -->
+    <section class="screen" id="scr-birthday">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t">生日与预期寿命</span></div>
+      <div class="scroll">
+        <div class="fieldlab">出生日期（可选，仅用于画格子）</div>
+        <div class="inbox"><input type="date" id="birthday-input" onchange="previewBirthday()"></div>
+        <div class="fieldlab">预期寿命（默认 80，随时可改）</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:16px">
+          <span style="font-size:32px;font-weight:600;color:var(--g900);font-variant-numeric:tabular-nums" id="le-num">80</span>
+          <span style="font-size:13px;color:var(--g500)">岁</span>
+          <span style="font-size:11px;color:var(--g400);margin-left:auto">全国人均约 78.6 岁</span>
+        </div>
+        <div class="slider" id="le-slider"><div class="fill"></div><div class="knob"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--g400)"><span>60</span><span>100</span></div>
+        <div style="font-size:13px;color:var(--g500);line-height:1.7;margin:20px 2px">这只是一个感知工具的刻度，不是任何预言。改它不吉利这种事，不存在的。</div>
+        <div class="btn btn-p" onclick="saveBirthday()">保存</div>
+        <div style="font-size:11px;color:var(--g400);margin-top:14px;text-align:center">生日只存在这台手机里，不上传。</div>
+      </div>
+    </section>
+
+    <!-- 屏13 云同步 -->
+    <section class="screen" id="scr-sync">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t">云同步</span></div>
+      <div class="scroll">
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-size:15px;color:var(--g800);line-height:1.8">不开同步也完全能用。同步只是多一份安心：换手机、丢手机的时候，你的格子还在。</div>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-size:13px;color:var(--g500);margin-bottom:10px">开启后会得到</div>
+          <div style="font-size:15px;color:var(--g800);line-height:2.1">✓ 双端加密备份，服务端也读不到内容<br>✓ 换机一键迁移<br>✓ 更丰富的年度回顾</div>
+        </div>
+        <div class="card" style="margin-bottom:18px">
+          <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:24px;font-weight:600;color:var(--g900)">¥68</span><span style="font-size:13px;color:var(--g500)">/ 年（首年 ¥30）</span></div>
+          <div style="font-size:11px;color:var(--g400);margin-top:6px">随时取消，取消后本地数据不受任何影响。</div>
+        </div>
+        <div class="btn btn-p" style="margin-bottom:10px" onclick="enableSync()">开启云同步</div>
+        <div class="btn btn-g" style="width:100%" onclick="back();toast('好的，数据继续只放在本机')">先不用，我就放本机</div>
+      </div>
+    </section>
+
+    <!-- 屏14 导出 -->
+    <section class="screen" id="scr-export">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t">导出记录</span></div>
+      <div class="scroll">
+        <div class="card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="exportJSON()">
+          <div><div style="font-size:15px;color:var(--g800)">JSON 数据备份</div><div style="font-size:11px;color:var(--g400);margin-top:3px">全部原始数据 · 免费</div></div>
+          <span style="font-size:13px;color:var(--p600)">导出</span>
+        </div>
+        <div class="card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="exportPoster()">
+          <div><div style="font-size:15px;color:var(--g800)">年度格子海报</div><div style="font-size:11px;color:var(--g400);margin-top:3px" id="poster-sub">2026 · 你的 336 个格子</div></div>
+          <span style="font-size:13px;color:var(--p600)">生成</span>
+        </div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toast('PDF 生命手账为温和变现点（¥6/份），内测版未接入支付')">
+          <div><div style="font-size:15px;color:var(--g800)">PDF 生命手账</div><div style="font-size:11px;color:var(--g400);margin-top:3px">可打印装订 · ¥6 / 份</div></div>
+          <span style="font-size:13px;color:var(--p600)">购买</span>
+        </div>
+        <div style="font-size:13px;color:var(--g500);line-height:1.7;margin:20px 2px">导出的文件归你所有，怎么用都行。</div>
+      </div>
+    </section>
+
+    <!-- 屏15 产品宪法 -->
+    <section class="screen" id="scr-constitution">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t">产品宪法</span></div>
+      <div class="scroll">
+        <div style="font-size:15px;color:var(--g600);line-height:1.8;margin-bottom:16px">这是我们的承诺，也写在每一行代码里。如果你发现我们违背了其中任何一条，请告诉我们。</div>
+        <div class="card" style="padding:4px 16px">
+          <div class="const-item"><div class="no">1</div><div class="tx">永远不做广告</div></div>
+          <div class="const-item"><div class="no">2</div><div class="tx">永远不做打卡、积分、连续记录惩罚</div></div>
+          <div class="const-item"><div class="no">3</div><div class="tx">永远不替用户得出人生结论</div></div>
+          <div class="const-item"><div class="no">4</div><div class="tx">永远不做心理诊疗与情感咨询</div></div>
+          <div class="const-item"><div class="no">5</div><div class="tx">永远不出售用户数据</div></div>
+          <div class="const-item"><div class="no">6</div><div class="tx">永远不制造焦虑式营销</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--g400);margin-top:16px;text-align:center">2026 年 10 月 15 日 · 第 1 版</div>
+      </div>
+    </section>
+
+    <!-- 屏16 意义快照 -->
+    <section class="screen" id="scr-snapshot">
+      <div class="appbar"><span class="bk" onclick="back()">‹</span><span class="t">意义快照</span></div>
+      <div class="scroll">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-size:15px;color:var(--g800);line-height:1.7">每记录 30 天，可以生成一份「意义快照」：这个阶段的你，看见了什么。</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--g500);margin:14px 0 8px"><span>当前阶段</span><span id="snap-progress">0 / 30 天</span></div>
+          <div style="height:8px;border-radius:4px;background:var(--g100);overflow:hidden"><div id="snap-bar" style="width:0%;height:100%;background:var(--p600);border-radius:4px"></div></div>
+          <div style="font-size:11px;color:var(--g400);margin-top:8px">不着急，断几天也没关系，进度不会清零。</div>
+        </div>
+        <div style="font-size:13px;color:var(--g500);margin:0 4px 8px">往期快照</div>
+        <div id="snapshot-list"></div>
+      </div>
+    </section>
+
+    <!-- ───── 覆盖层：BottomSheet / Modal / 危机弹窗 ───── -->
+
+    <!-- 屏7 三级：补记 BottomSheet -->
+    <div class="sheet-dim" id="sheet-supplement">
+      <div class="sheet">
+        <div class="grab"></div>
+        <h4 id="supp-title">补记 3 月 12 日</h4>
+        <div class="ta" style="min-height:88px"><textarea id="supp-input" placeholder="那天还发生了什么，想补一句吗" style="min-height:60px"></textarea><span class="cnt">0</span></div>
+        <div class="moods" style="margin:12px 0 16px">
+          <div class="mood n sel" data-mood="n" onclick="selMood(this)"><span class="dot" style="border-color:var(--nourish)"></span>滋养</div>
+          <div class="mood d" data-mood="d" onclick="selMood(this)"><span class="dot" style="border-color:var(--drain)"></span>耗竭</div>
+          <div class="mood m" data-mood="" onclick="selMood(this)"><span class="dot" style="border-color:var(--g400);border-style:dashed"></span>不标了</div>
+        </div>
+        <div class="btn btn-p" style="height:48px" onclick="saveSupplement()">保存补记</div>
+      </div>
+    </div>
+
+    <!-- 屏9 新增愿望 BottomSheet -->
+    <div class="sheet-dim" id="sheet-add-wish">
+      <div class="sheet">
+        <div class="grab"></div>
+        <h4>想体验一件小事</h4>
+        <div class="inbox"><input id="wish-input" placeholder="写下一件想体验的小事"></div>
+        <div style="font-size:11px;color:var(--g400);margin:8px 2px 18px;line-height:1.6">不用宏大，也不用现在就去做。它会安静地待在清单里等你。</div>
+        <div class="btn btn-p" style="height:48px;margin-bottom:10px" onclick="saveWish()">放进愿望清单</div>
+        <div class="btn btn-g" style="width:100%" onclick="closeOverlay('sheet-add-wish')">先不加了</div>
+      </div>
+    </div>
+
+    <!-- 屏11 默认视角选择 -->
+    <div class="sheet-dim" id="sheet-default-view">
+      <div class="sheet">
+        <div class="grab"></div>
+        <h4>默认打开的视角</h4>
+        <div class="opt sel" data-v="1" onclick="selOpt(this)"><div class="radio"></div><div><div class="ot">倒计时 · 过一天少一天</div><div class="os">适合想给自己一点紧迫感的时候</div></div></div>
+        <div class="opt" data-v="2" onclick="selOpt(this)"><div class="radio"></div><div><div class="ot">收集 · 过一天多一天</div><div class="os">适合想多看看自己攒下了什么</div></div></div>
+        <div style="font-size:11px;color:var(--g400);margin:14px 2px 18px;line-height:1.6">两种视角随时可以切换，这里只是决定打开时先看到哪一个。</div>
+        <div class="btn btn-p" style="height:48px" onclick="saveDefaultView()">就这样</div>
+      </div>
+    </div>
+
+    <!-- 屏8 三级：删除二次确认 -->
+    <div class="modal-dim" id="modal-delete">
+      <div class="modal">
+        <h4>删除这条记录</h4>
+        <p>删掉就找不回来了。确定吗？</p>
+        <div class="btn btn-err" style="width:100%;margin-bottom:10px" onclick="deleteDiary()">确定删除</div>
+        <div class="btn btn-g" style="width:100%" onclick="closeOverlay('modal-delete')">再想想</div>
+      </div>
+    </div>
+
+    <!-- 屏10 悄悄放弃确认 -->
+    <div class="modal-dim" id="modal-abandon">
+      <div class="modal">
+        <h4>悄悄放弃这个愿望？</h4>
+        <p>它不会消失，也不会被任何人看到，只会安静地待在"我的"里。哪天想捡起来，随时可以。</p>
+        <div class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="abandonWish()">悄悄放弃</div>
+        <div class="btn btn-g" style="width:100%" onclick="closeOverlay('modal-abandon')">再想想</div>
+      </div>
+    </div>
+
+    <!-- 注销确认 -->
+    <div class="modal-dim" id="modal-delete-all">
+      <div class="modal">
+        <h4>注销并删除全部数据</h4>
+        <p>所有格子、日记和愿望都会被删掉，删掉就找不回来了。确定吗？</p>
+        <div class="btn btn-err" style="width:100%;margin-bottom:10px" onclick="deleteAll()">确定删除</div>
+        <div class="btn btn-g" style="width:100%" onclick="closeOverlay('modal-delete-all')">再想想</div>
+      </div>
+    </div>
+
+    <!-- 屏5 危机干预弹窗（白底黑字 · 缓入 · 非警示配色） -->
+    <div class="crisis-dim" id="modal-crisis">
+      <div class="crisis">
+        <h3>此刻的感受很沉重吗</h3>
+        <p>你写下的内容让我们想陪你说一句话：本产品只是一个自我记录工具，不能替代专业心理帮助。</p>
+        <p>如果痛苦难以承受，请拨打全国心理援助热线 <span class="hot" id="crisis-hotline">12356</span>（24 小时），会有受过专业训练的人听你说。</p>
+        <div class="f">你也可以把这份感受告诉信任的人。你不必一个人扛。</div>
+        <div class="btn btn-p" style="height:48px;margin-bottom:10px" id="crisis-call">拨打 12356</div>
+        <div class="btn btn-g" onclick="closeOverlay('modal-crisis')">关闭</div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="nav" id="nav">
+    <div class="tab" data-tab="grid" onclick="switchTab('grid')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>方格</div>
+    <div class="tab" data-tab="diary" onclick="switchTab('diary')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>记录</div>
+    <div class="tab" data-tab="wish" onclick="switchTab('wish')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>愿望</div>
+    <div class="tab" data-tab="me" onclick="switchTab('me')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>我的</div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "shengge-app-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "「生格」App 薄后端：游客账号/加密同步/题库与热线下发/审核兜底（零依赖 Node.js）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}
