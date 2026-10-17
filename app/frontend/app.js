@@ -81,6 +81,22 @@ function closeOverlay(id) { $(id).classList.remove('on'); }
 document.querySelectorAll('.sheet-dim,.modal-dim').forEach(d => {
   d.addEventListener('click', (e) => { if (e.target === d && d.id !== 'modal-crisis') d.classList.remove('on'); });
 });
+
+/* ── 系统返回（全面屏手势 / 返回键）────────────
+   供原生壳（WebView）调用：返回 true = 已消费，false = 放行退出应用。
+   优先级：浮层 > 二级/三级页面 > 一级 Tab 首页。欢迎页不拦截（允许退出）。 */
+function __sgOnSystemBack() {
+  // 1) 最顶层浮层：BottomSheet / Modal / 危机弹窗 → 关闭即"返回上一级"
+  const openOv = [...document.querySelectorAll('.sheet-dim.on,.modal-dim.on,.crisis-dim.on')];
+  if (openOv.length) { openOv[openOv.length - 1].classList.remove('on'); return true; }
+  // 2) 欢迎页（首启）：不拦截，允许退出
+  if (cur === 'scr-welcome') return false;
+  // 3) 二级/三级页面：返回上一级
+  if (stack.length > 0 || !Object.values(TAB_SCREEN).includes(cur)) { back(); return true; }
+  // 4) 一级 Tab 首页：放行 → 原生层 finish() 退出
+  return false;
+}
+window.__sgOnSystemBack = __sgOnSystemBack;
 function selMood(el) { el.parentElement.querySelectorAll('.mood').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); }
 function selOpt(el) { el.parentElement.querySelectorAll('.opt').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); }
 function selMoodVal(containerId) { const el = $(containerId).querySelector('.mood.sel'); return el ? el.dataset.mood : ''; }

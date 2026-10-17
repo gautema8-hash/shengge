@@ -15,9 +15,12 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.ValueCallback;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.net.http.SslError;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 /**
  * 「生格」WebView 壳（内测真机用）。
@@ -34,6 +37,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private int attempt = 0;
     private boolean loaded = false;
+    private OnBackInvokedCallback backCallback; // Android 13+ 手势返回（预测性返回）
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +47,7 @@ public class MainActivity extends Activity {
         w.setNavigationBarColor(Color.parseColor("#F7F5F0"));
         w.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#F7F5F0")));
         applyInsets();
+        setupBackHandling();
         web = new WebView(this);
         WebView.setWebContentsDebuggingEnabled(true); // 内测包：允许 CDP 远程调试
         WebSettings s = web.getSettings();
@@ -74,6 +79,52 @@ public class MainActivity extends Activity {
 
         setContentView(web);
         loadCurrent();
+    }
+
+    /**
+     * 系统返回统一入口（全面屏手势 + 传统返回键）。
+     * 先问前端 __sgOnSystemBack()：返回 true = 前端已消费（关闭浮层/返回上一级页面）；
+     * false = 一级 Tab 首页，才放行退出（WebView 无历史则 finish）。
+     */
+    private void handleSystemBack() {
+        if (web == null) { finish(); return; }
+        web.evaluateJavascript(
+                "(function(){try{return (typeof window.__sgOnSystemBack==='function' && window.__sgOnSystemBack())?'1':'0';}catch(e){return '0';}})()",
+                new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String value) {
+                        boolean consumed = "\"1\"".equals(value) || "1".equals(value);
+                        if (consumed) return;
+                        if (web.canGoBack()) { web.goBack(); return; }
+                        runOnUiThread(new Runnable() { @Override public void run() { finish(); } });
+                    }
+                });
+    }
+
+    /** Android 13+ 预测性手势返回注册；低版本走 onBackPressed 传统路径 */
+    private void setupBackHandling() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            backCallback = new OnBackInvokedCallback() {
+                @Override public void onBackInvoked() { handleSystemBack(); }
+            };
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback);
+        }
+    }
+
+    @Override
+    public void onBackPressed() { // <33 传统返回键；33+ 由 OnBackInvokedCallback 接管
+        if (Build.VERSION.SDK_INT >= 33) { super.onBackPressed(); return; }
+        handleSystemBack();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
+            backCallback = null;
+        }
+        super.onDestroy();
     }
 
     /**
