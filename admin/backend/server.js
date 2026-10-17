@@ -16,7 +16,9 @@ const cache = require('./cache');
 const PORT = Number(process.env.SG_PORT || 8102);
 const ADMIN_USER = process.env.SG_ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.SG_ADMIN_PASS || 'shengg@2026';
-const FRONTEND_DIR = process.env.SG_FRONTEND_DIR || path.join(__dirname, '..', 'frontend');
+// 前端目录优先级：--frontend 命令行参数 > SG_FRONTEND_DIR 环境变量 > 默认 ../frontend
+const FRONTEND_DIR = (process.argv.find(a => a.startsWith('--frontend=')) || '').split('=')[1]
+  || process.env.SG_FRONTEND_DIR || path.join(__dirname, '..', 'frontend');
 const ADMIN_RATE = Number(process.env.SG_ADMIN_RATE || 120);
 const LOGIN_RATE = Number(process.env.SG_LOGIN_RATE || 10);
 const BODY_MAX = 256 * 1024;

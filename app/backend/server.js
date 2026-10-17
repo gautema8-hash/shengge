@@ -10,13 +10,17 @@
  */
 'use strict';
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const path = require('path');
 const store = require('./store');
 const G = require('./guard');
 const cache = require('./cache');
 
 const PORT = Number(process.env.SG_PORT || 8101);
-const FRONTEND_DIR = process.env.SG_FRONTEND_DIR || path.join(__dirname, '..', 'frontend');
+// 前端目录优先级：--frontend 命令行参数 > SG_FRONTEND_DIR 环境变量 > 默认 ../frontend
+const FRONTEND_DIR = (process.argv.find(a => a.startsWith('--frontend=')) || '').split('=')[1]
+  || process.env.SG_FRONTEND_DIR || path.join(__dirname, '..', 'frontend');
 const API_RATE = Number(process.env.SG_APP_RATE || 240);
 const MOD_RATE = Number(process.env.SG_MOD_RATE || 60);
 const BLOB_MAX = 512 * 1024;
@@ -25,21 +29,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=u
 function ok(data, msg) { return JSON.stringify({ code: 0, msg: msg || 'ok', data }); }
 function err(msg, code) { return JSON.stringify({ code: code || 1, msg, data: null }); }
 
-const server = http.createServer(async (req, res) => {
-  req.socket.setTimeout(30000);
-  const u = new URL(req.url, 'http://x');
-  const p = u.pathname;
-  if (req.method === 'OPTIONS') return G.send(req, res, 204, '');
-  try {
-    if (p.startsWith('/api/')) return await api(req, res, p);
-    if (p === '/ping') return G.send(req, res, 200, ok({ pong: Date.now() }));
-    if (p === '/robots.txt') return G.send(req, res, 200, 'User-agent: *\nDisallow: /api/\n', 'text/plain');
-    return G.serveStatic(req, res, p, FRONTEND_DIR, MIME);
-  } catch (e) {
-    console.error('[app-api][error]', p, e && e.message);
-    if (!res.headersSent) return G.send(req, res, 500, err('服务暂时不可用，请稍后再试'));
-  }
-});
+const server = http.createServer(handler);
 
 async function api(req, res, p) {
   const ip = G.clientIp(req);
@@ -119,11 +109,36 @@ server.requestTimeout = 30000;
 server.keepAliveTimeout = 5000;
 server.maxHeadersCount = 64;
 
+async function handler(req, res) {
+  req.socket.setTimeout(30000);
+  const u = new URL(req.url, 'http://x');
+  const p = u.pathname;
+  if (req.method === 'OPTIONS') return G.send(req, res, 204, '');
+  try {
+    if (p.startsWith('/api/')) return await api(req, res, p);
+    if (p === '/ping') return G.send(req, res, 200, ok({ pong: Date.now() }));
+    if (p === '/robots.txt') return G.send(req, res, 200, 'User-agent: *\nDisallow: /api/\n', 'text/plain');
+    return G.serveStatic(req, res, p, FRONTEND_DIR, MIME);
+  } catch (e) {
+    console.error('[app-api][error]', p, e && e.message);
+    if (!res.headersSent) return G.send(req, res, 500, err('服务暂时不可用，请稍后再试'));
+  }
+}
+
 (async () => {
   const mode = await store.init();
   await cache.ensure(); // 启动即探测 Redis，health 上报准确
+  // 双端口：http 恒在 PORT（桌面/常规）；配置 SG_TLS_CERT/SG_TLS_KEY 时额外开 https
+  // （https 用途：真机浏览器访问——Chromium HTTPS-First 会把 http 升级为 https，必须提供 TLS 端口）
+  const tlsCert = process.env.SG_TLS_CERT, tlsKey = process.env.SG_TLS_KEY;
+  if (tlsCert && tlsKey) {
+    const tlsPort = Number(process.env.SG_TLS_PORT || 8103);
+    https.createServer({ cert: fs.readFileSync(tlsCert), key: fs.readFileSync(tlsKey) }, handler).listen(tlsPort, () => {
+      console.log(`[shengge-app-api] https listening on 0.0.0.0:${tlsPort} (for mobile browsers)`);
+    });
+  }
   server.listen(PORT, () => {
-    console.log(`[shengge-app-api] listening on http://127.0.0.1:${PORT} | storage=${mode} cache=${cache.getMode()} rate=${API_RATE}/min/ip`);
+    console.log(`[shengge-app-api] http listening on 0.0.0.0:${PORT} | storage=${mode} cache=${cache.getMode()} rate=${API_RATE}/min/ip`);
     console.log(`[shengge-app-api] frontend: ${FRONTEND_DIR}`);
     console.log(`[shengge-app-api] encryption: ${JSON.stringify(store.getEncryptInfo())}`);
   });
